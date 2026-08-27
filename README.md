@@ -1,2 +1,0 @@
-# nixie
-gari's bot
