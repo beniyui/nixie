@@ -1,4 +1,4 @@
-module nixie0.2
+module nixie
 
 go 1.24.4
 

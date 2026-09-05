@@ -1,18 +1,24 @@
 package main
 
 import (
-	"bytes"
-	"encoding/json"
 	"fmt"
-	"io"
 	"log"
-	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
+	"strings"
+
+	"nixie/ollama"
 
 	"github.com/joho/godotenv"
 	"github.com/bwmarrin/discordgo"
+)
+
+var Model int //Save the app's current state. connecting(conecting to discord session) or idle(bot available) or working(AI is working)
+const(
+	connecting = 0
+	idle = 1
+	working = 2
 )
 
 func tokenENV() string{
@@ -24,56 +30,54 @@ func tokenENV() string{
 	return  token
 }
 
-const (
-	OllamaModel  = "gemma4:e2b"
-	OllamaURL    = "http://localhost:11434/api/generate"
-)
-
-type OllamaRequest struct {
-	Model  string `json:"model"`
-	Prompt string `json:"prompt"`
-	Stream bool   `json:"stream"`
-	Think bool   `json:"think"`
-}
-
-type OllamaResponse struct {
-	Response string `json:"response"`
-}
-
 func main() {
-	dg, err := discordgo.New("Bot " + tokenENV())
-	if err != nil {
-		log.Fatalf("Discord session error: %v", err)
+	dg, dgErr := discordgo.New("Bot " + tokenENV())
+	
+	if dgErr != nil {
+		log.Fatalf("Discord session error: %v", dgErr)
 	}
-
-	dg.AddHandler(messageCreate)
-	dg.Identify.Intents = discordgo.IntentsGuildMessages | discordgo.IntentDirectMessages | discordgo.IntentMessageContent
-
-	err = dg.Open()
-	if err != nil {
+	if err := dg.Open(); err != nil {
 		log.Fatalf("connection error: %v", err)
 	}
 
+	dg.Identify.Intents = discordgo.IntentsGuildMessages | discordgo.IntentDirectMessages | discordgo.IntentMessageContent
+	dg.AddHandler(messageCreate)
+	
+
+	
+
+
 	fmt.Println("BOT RUNNING\nCTRL+C to exit, error:")
+
+
+	//CTRL+C
 	sc := make(chan os.Signal, 1)
 	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, os.Interrupt)
 	<-sc
-
 	dg.Close()
 }
 
 
 
 func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
-	// ingnore herself
-	if m.Author.ID == s.State.User.ID {
+	nixieID := s.State.User.ID
+	if m.Author.ID == nixieID{
 		return
 	}
-
-	// bot triger
-	prefix1 := "nixie"
-	if len(m.Content) <= len(prefix1) || m.Content[:len(prefix1)] != prefix1 {
+	if !trigerExist(m.Content){ // means it has no nixie's triger
 		return
+	}
+	//-------------
+	
+	if AfterTrigerEmpty(m.Content){
+		//reply "nixie UP."
+		targetMSG := &discordgo.MessageReference{
+			MessageID: m.ID,
+			ChannelID: m.ChannelID,
+			GuildID: m.GuildID,
+			}
+		s.ChannelMessageSendReply(m.ChannelID, "nixie UP.", targetMSG)
+		s.ChannelMessageSend(m.ChannelID, "ping queryOK")
 	}
 
 	//type something
@@ -103,7 +107,7 @@ your name is 'nixie'.
 	finalPrompt := contextPrompt + userPrompt
 	
 	// Ollama API
-	replyText, err := queryOllama(finalPrompt)
+	replyText, err := ollama.QueryOllama(finalPrompt)
 	if err != nil {
 		s.ChannelMessageSend(m.ChannelID, "error of ollama")
 		log.Printf("Ollama Error: %v", err)
@@ -117,36 +121,35 @@ your name is 'nixie'.
 	s.ChannelMessageSend(m.ChannelID, replyText)
 }
 
-
-
-func queryOllama(prompt string) (string, error) {
-	reqBody := OllamaRequest{
-		Model:  OllamaModel,
-		Prompt: prompt,
-		Stream: false,
-		Think: false,
+//helper func
+func trigerExist(target string) bool{
+	if !strings.HasPrefix(target, "nixie"){
+		return false
 	}
-
-	jsonData, err := json.Marshal(reqBody)
-	if err != nil {
-		return "", err
+	if !strings.HasPrefix(target, "Nixie"){
+		return false
 	}
-
-	resp, err := http.Post(OllamaURL, "application/json", bytes.NewBuffer(jsonData))
-	if err != nil {
-		return "", err
+	if !strings.HasPrefix(target, "NIXIE"){
+		return false
 	}
-	defer resp.Body.Close()
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return "", err
+	if !strings.HasPrefix(target, "ニキシー"){
+		return false
 	}
+	return true
+}
 
-	var ollamaResp OllamaResponse
-	if err := json.Unmarshal(body, &ollamaResp); err != nil {
-		return "", err
+func AfterTrigerEmpty(target string) bool{
+	if target == "nixie"{
+		return true
 	}
-
-	return ollamaResp.Response, nil
+	if target == "Nixie"{
+		return true
+	}
+	if target == "NIXIE"{
+		return true
+	}
+	if target == "ニキシー"{
+		return true
+	}
+	return false
 }
