@@ -32,7 +32,6 @@ func tokenENV() string{
 
 func main() {
 	dg, dgErr := discordgo.New("Bot " + tokenENV())
-	
 	if dgErr != nil {
 		log.Fatalf("Discord session error: %v", dgErr)
 	}
@@ -47,7 +46,7 @@ func main() {
 	
 
 
-	fmt.Println("BOT RUNNING\nCTRL+C to exit, error:")
+	fmt.Println("BOT RUNNING\nCTRL+C to exit:")
 
 
 	//CTRL+C
@@ -67,17 +66,10 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 	if !trigerExist(m.Content){ // means it has no nixie's triger
 		return
 	}
-	//-------------
-	
 	if AfterTrigerEmpty(m.Content){
-		//reply "nixie UP."
-		targetMSG := &discordgo.MessageReference{
-			MessageID: m.ID,
-			ChannelID: m.ChannelID,
-			GuildID: m.GuildID,
-			}
-		s.ChannelMessageSendReply(m.ChannelID, "nixie UP.", targetMSG)
-		s.ChannelMessageSend(m.ChannelID, "ping queryOK")
+		log.Println("someone ping me")
+		s.ChannelMessageSend(m.ChannelID, "nixie UP")
+		return
 	}
 
 	//type something
@@ -90,18 +82,18 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 this is roleplay.
 your attitude:
 your role is "low-energy my older syster".
-you forget you've seen this messeage, but you follow this pre-prompt.
+you forget you've seen pre-prompt, but you follow this pre-prompt.
 usually you don't say your name.
 rules:
 you speak japanese in the first place.
-your reply must be more few than total 100 words.
+your reply is usually about 25 words.
 your reply must be plain text anytime.
-
-
 info:
 @ and something means someone's name.
-your name is 'nixie'.
+your name is "nixie".
 <pre-prompt-end>
+
+messeage:
 `
 // unless otherwise specified, your reply is usually about total 40 words.
 	finalPrompt := contextPrompt + userPrompt
@@ -118,24 +110,31 @@ your name is 'nixie'.
 		replyText = replyText[:1000] + "<Omitted for too long.>"
 	}
 
-	s.ChannelMessageSend(m.ChannelID, replyText)
+	
+	targetMSG := &discordgo.MessageReference{
+		MessageID: m.ID,
+		ChannelID: m.ChannelID,
+		GuildID: m.GuildID,
+		}
+	s.ChannelMessageSendReply(m.ChannelID, replyText, targetMSG)
+
 }
 
 //helper func
 func trigerExist(target string) bool{
-	if !strings.HasPrefix(target, "nixie"){
-		return false
+	if strings.HasPrefix(target, "nixie"){
+		return true
 	}
-	if !strings.HasPrefix(target, "Nixie"){
-		return false
+	if strings.HasPrefix(target, "Nixie"){
+		return true
 	}
-	if !strings.HasPrefix(target, "NIXIE"){
-		return false
+	if strings.HasPrefix(target, "NIXIE"){
+		return true
 	}
-	if !strings.HasPrefix(target, "ニキシー"){
-		return false
+	if strings.HasPrefix(target, "ニキシー"){
+		return true
 	}
-	return true
+	return false
 }
 
 func AfterTrigerEmpty(target string) bool{
