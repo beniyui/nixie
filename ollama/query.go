@@ -8,19 +8,23 @@ import(
 	
 )
 
-
 const (
 	TargetModel  = "gemma4:e2b"
 	OllamaURL    = "http://localhost:11434/api/generate"
 )
+
+type response struct {
+	Response string `json:"response"`
+}
+type options struct {
+    ReasoningEffort string `json:"reasoning_effort"`
+}
 type request struct {
 	Model  string `json:"model"`
 	Prompt string `json:"prompt"`
 	Stream bool   `json:"stream"`
 	Think bool   `json:"think"`
-}
-type response struct {
-	Response string `json:"response"`
+	Options options `json:"options"`
 }
 
 func QueryOllama(prompt string) (string, error) {
@@ -29,6 +33,7 @@ func QueryOllama(prompt string) (string, error) {
 		Prompt: prompt,
 		Stream: false,
 		Think: false,
+		Options: options{ ReasoningEffort: "low",},
 	}
 
 	jsonData, err := json.Marshal(Body)

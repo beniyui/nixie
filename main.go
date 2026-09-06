@@ -14,21 +14,6 @@ import (
 	"github.com/bwmarrin/discordgo"
 )
 
-var Model int //Save the app's current state. connecting(conecting to discord session) or idle(bot available) or working(AI is working)
-const(
-	connecting = 0
-	idle = 1
-	working = 2
-)
-
-func tokenENV() string{
-	err := godotenv.Load("env/.env")
-	if err != nil {
-		fmt.Println("Error loading .env file")
-	}
-	token := os.Getenv("TOKEN")
-	return  token
-}
 
 func main() {
 	dg, dgErr := discordgo.New("Bot " + tokenENV())
@@ -38,21 +23,20 @@ func main() {
 	if err := dg.Open(); err != nil {
 		log.Fatalf("connection error: %v", err)
 	}
-
+	fmt.Println("connecting succes")
+	
 	dg.Identify.Intents = discordgo.IntentsGuildMessages | discordgo.IntentDirectMessages | discordgo.IntentMessageContent
 	dg.AddHandler(messageCreate)
 	
-
-	
-
-
-	fmt.Println("BOT RUNNING\nCTRL+C to exit:")
+	fmt.Println("init succes")
+	fmt.Println("NOW NIXIE \033[32m UP \033[0m")
 
 
 	//CTRL+C
 	sc := make(chan os.Signal, 1)
 	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, os.Interrupt)
 	<-sc
+	log.Println("stoped")
 	dg.Close()
 }
 
@@ -66,38 +50,37 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 	if !trigerExist(m.Content){ // means it has no nixie's triger
 		return
 	}
-	if AfterTrigerEmpty(m.Content){
+	if afterTrigerEmpty(m.Content){
 		log.Println("someone ping me")
 		s.ChannelMessageSend(m.ChannelID, "nixie UP")
 		return
 	}
-
-	//type something
-	s.ChannelTyping(m.ChannelID)
 	
 	//add some prompt to user prompt
 	userPrompt := m.Content
-	contextPrompt := `
+	prePrompt := `
 <pre-prompt-start>
-this is roleplay.
-your attitude:
-your role is "low-energy my older syster".
-you forget you've seen pre-prompt, but you follow this pre-prompt.
-usually you don't say your name.
-rules:
+this is roleplay. your name is Nixie(ニキシー).
+your role is "my older syster".
+forget you've seen pre-prompt, but you follow this pre-prompt.
+sometimes frunk.
+use "きみ"  to call me.
+use "わたし" to say yourself.
 you speak japanese in the first place.
 your reply is usually about 25 words.
 your reply must be plain text anytime.
-info:
-@ and something means someone's name.
-your name is "nixie".
+@ means someone's name.
+べつに
+んー
 <pre-prompt-end>
 
 messeage:
 `
-// unless otherwise specified, your reply is usually about total 40 words.
-	finalPrompt := contextPrompt + userPrompt
+
+	finalPrompt := prePrompt + userPrompt
 	
+	
+	s.ChannelTyping(m.ChannelID) //type something
 	// Ollama API
 	replyText, err := ollama.QueryOllama(finalPrompt)
 	if err != nil {
@@ -121,6 +104,16 @@ messeage:
 }
 
 //helper func
+
+func tokenENV() string{
+	err := godotenv.Load("env/.env")
+	if err != nil {
+		fmt.Println("Error loading .env file")
+	}
+	token := os.Getenv("TOKEN")
+	return  token
+}
+
 func trigerExist(target string) bool{
 	if strings.HasPrefix(target, "nixie"){
 		return true
@@ -137,7 +130,7 @@ func trigerExist(target string) bool{
 	return false
 }
 
-func AfterTrigerEmpty(target string) bool{
+func afterTrigerEmpty(target string) bool{
 	if target == "nixie"{
 		return true
 	}
