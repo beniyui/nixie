@@ -1,0 +1,197 @@
+nixie v1.0.alpha.5 コードレビュー結果
+
+対象：Discord bot コア（discordgo, bubbletea, ollama ローカルAPI）
+範囲：cmd/, internal/, dist/ の設定ファイル一式（Goコード約1300行）
+注記：レビュー環境に Go が入っていないため、go build と go vet は実行していません。すべて静的に読んだ結果です。
+
+============================================================
+1. 採点（10点満点）
+============================================================
+
+＊可読性　　：6点
+　ディレクトリ構成は素直で、コメントも丁寧です。命名の揺れと、責務の混在があります。
+
+＊堅牢性　　：4点
+　エラーの握りつぶし、タイムアウトなし、二重 close によるパニックなど、実害のある穴があります。
+
+＊効率性　　：4点
+　遅さの原因が複数あり、そのうち1つは設定漏れ（keep_alive）です。
+
+＊シンプルさ：6点
+　全体は小さくまとまっています。TUI の使いすぎと、service_test の混在が惜しいです。
+
+＊総合評価　：5点
+　alpha 版として骨格は良いです。速度とバグの項目を直せば、大きく上がります。
+
+============================================================
+2. 最重要課題：AIの応答が遅い（影響が大きい順）
+============================================================
+
+(1) 生成リクエストに keep_alive がなく、5分でモデルが落ちる【最有力】
+
+＊事前読み込みでは KeepAlive: -1 を送っています（internal/tools/ai/ollama.go 75-83行）。
+＊しかし実際の返信リクエストでは KeepAlive が未指定です（internal/tools/ai/main.go 112-133行）。
+＊Ollama はリクエストごとに保持時間を上書きするため、最初の返信で既定の5分に戻ります。
+＊その結果、5分放置すると次の返信でモデルの再ロードが走り、数秒から十数秒かかります。
+＊起動時の案内「PCが再起動されるまで保持」（controller/entry.go 96行）も、実際とは異なります。
+＊確認方法：返信の直後に ollama ps を実行し、UNTIL 列を見てください。Forever でなく「4 minutes from now」なら該当します。
+＊修正：returnReqBody の両方の分岐で KeepAlive: -1 を設定してください。環境変数 OLLAMA_KEEP_ALIVE=-1 でも可能です。
+
+(2) Stream: false のため、全文が終わるまでユーザーには何も見えない
+
+＊stream: true にして、1秒程度ごとにメッセージを編集して逐次表示するのが効果的です。Discord の編集レート制限があるので、頻繁すぎる編集は避けてください。
+＊options.num_predict（例：200）で、最悪時の長さに上限をかけてください。プロンプトの「30語以内」は依頼しているだけで、強制されていません。
+＊num_ctx も明示すると、短い返信用途ではメモリと prefill が軽くなります（要検証）。
+
+(3) Think の扱いが不確実
+
+＊Think bool に omitempty が付いているため、false は送信されません（ollama.go 30行）。通常モードで思考を切れず、モデルが既定で思考するなら余計なトークンを生成します。*bool にして、明示的に送ってください。
+＊Options.ReasoningEffort は、Ollama の options に載せる項目ではなく、無視されている可能性が高いです（ai/main.go 120行）。Ollama の think の仕様を確認してください。
+
+(4) Ollama 呼び出しの前に、Discord API を同期で2回叩いている
+
+＊リアクション追加（ai/main.go 93行）とログ送信（ai/main.go 99行）です。それぞれ100〜300ms程度の遅れになります。
+＊どちらも goroutine で非同期にするか、削除してください。
+＊プロンプト全文を Discord に流す処理は、プライバシーの面でも避けてください。
+
+(5) 同時リクエストの制御がない
+
+＊discordgo のハンドラは並行実行されるため、Ollama 側で順番待ちになります。
+＊HTTP クライアントにタイムアウトがなく（ollama.go 52行）、詰まると永遠に待ちます。
+＊セマフォか worker キューを置き、待ち行列が長ければ「混んでる」と返してください。ユーザーごとのクールダウンも入れてください。
+
+(6) 事前読み込みが全モデルを対象にしている
+
+＊選択していないモデルまで読み込みます（tools/wizard/main.go 76行）。選んだ normal と think（同じなら1つ）だけにしてください。
+
+(7) 計測が実態とずれている
+
+＊表示される秒数は total_duration で、bot 側の待ち時間が含まれません。
+＊time.Since による実測値と、load_duration, prompt_eval_duration, eval_duration, eval_count をログに出すと、どこが遅いか特定できます。
+＊ollama ps の PROCESSOR 列が 100% GPU になっているかも確認してください。
+
+============================================================
+3. 直すべきバグ（重要度順）
+============================================================
+
+1. Intents とハンドラが Open() の後に設定されている（controller/entry.go 83-93行）
+　Identify は Open() の時点で送られるため、後から設定した Intents は反映されない可能性が高いです。
+　既定の Intents に MessageContent（特権）は含まれません。サーバーで m.Content が空になる恐れがあります。
+　ハンドラ登録も含めて、Open() の前に移してください。
+　Discord Developer Portal 側で Message Content Intent を有効にすることも必要です。
+
+2. close(breaker) の二重実行でパニック（service/service/down.go 29行）
+　許可されたユーザーが nixie down を2回送ると、close of closed channel で落ちます。
+　sync.Once か context.CancelFunc にしてください。
+
+3. 返信に JSON 全体を付けており、2000文字を超えると何も返らない（tools/ai/main.go 70行）
+　JSON の response に本文が重複して入るため、長さが倍になります。
+　送信エラーは無視されるので、超過するとユーザーには無言になります。
+　デバッグ出力は削除し、秒数は %.1f にしてください。長い返信は分割か切り詰めてください。
+
+4. ランダム返信に空文字が含まれている（controller/msg.go 210行）
+　3分の1の確率で、Discord が空メッセージを拒否します。
+
+5. Webhook の失敗を無視して「投稿を送信しました」と返している（service/service/anonSys.go 44行）
+
+6. bot 自身の投稿しか除外していない（controller/msg.go 27行）
+　他の bot のメッセージにも反応します。m.Author.Bot で除外してください。
+
+7. LLM の出力をそのまま送信している
+　@everyone などを出力されると、全体メンションになり得ます。AllowedMentions で Parse を空にしてください。
+　ユーザー入力を '...' で囲むだけなので、プロンプトインジェクションも容易です。/api/chat を使い、system と user のロールを分けてください。
+
+8. 正常終了でも os.Exit(1)（controller/entry.go 113行、cmd/unloader/model_unloader.go 18行）
+　defer stop() も実行されません。
+
+9. nil 参照の可能性
+　internal/service_test/crashtest.go 82行の m.User.ID は、nil チェックの外にあります。
+　tools/ai/ollama.go 68行の var r *Response は、body が null だと後で nil 参照になります。var r Response にしてください。
+
+10. その他
+＊Ollama が200以外を返したとき、エラー本文を捨てています（ollama.go 59行）。
+＊プロンプトファイルの読み込みエラーを無視しています（tools/ai/main.go 87行）。
+＊SendDM が引数 trgID を無視し、常に DENSU_ID に送ります（service_test/crashtest.go 111行）。
+＊Unload のスピナー表示が「preloading」のままです（tools/wizard/main.go 101行）。
+＊AskYesOrNo は p.Run() のエラーを捨てています（tools/wizard/selectmenu.go）。
+＊ウィザードに Ctrl+C や Esc の処理がなく、中断できない可能性があります（要確認）。
+＊unloader で「いいえ」を選ぶと「アンロード失敗」と表示されます。
+＊テスト用コマンド（list など）の処理後に return がなく、そのまま通常処理へ流れます（controller/msg.go 41-60行）。
+＊Dmtest や Rolelisttest は、エラー時に空メッセージを送信することがあります。
+
+============================================================
+4. メンテナンス性への助言
+============================================================
+
+【構造】
+＊tools/ai が「Ollama の HTTP クライアント」と「Discord への返信処理」を両方持っています。Ollama クライアントは discordgo に依存しない純粋なパッケージに分けてください。
+＊次のような構成を提案します。
+　internal/config　　　：環境変数を起動時に一度だけ読み、検証して構造体で渡す
+　internal/ollama　　　：HTTP クライアント（discordgo に依存しない）
+　internal/bot　　　　 ：ハンドラとルーティング
+　internal/feature/... ：匿名投稿、ping、終了、ランダム返信など機能ごと
+　internal/ui　　　　　：ウィザード、スピナー、アート
+＊service_test は名前がテストですが、本番コードとして import されています。debug などに改名するか、ビルドタグで除外してください。
+＊設定がハードコードされています。
+　ユーザーID：controller/msg.go 191行、tools/ai/main.go 53行
+　ログチャンネルID：tools/tools/log.go 8行
+　カスタム絵文字ID：tools/ai/main.go 93行
+　Ollama URL：tools/ai/ollama.go 12行
+＊os.Getenv も約12箇所に分散しています。config に集約してください。
+＊カスタム絵文字は、他のサーバーでは失敗します。Unicode 絵文字が無難です。
+＊相対パス（./.env, ./config/...）は起動ディレクトリに依存します。os.Executable() の場所を基準にしてください。
+＊起動にウィザード（TUI）が必須で、タスクスケジューラなどでの無人起動ができません。フラグか環境変数で選択を渡せるようにしてください。
+
+【重複とデッドコード】
+＊triggerExist と afterTriggerEmpty が同じリストを二重に持っています（controller/msg.go 107-144行）。トリガー配列を1つにし、ToLower と TrimSpace で比較してください。
+＊"nix" は "nixie" を包含するので冗長です。また nixos などの無関係な単語にも反応します。
+＊未使用のコードは削除してください。
+　Worker と NewWorker、attachExist、CrashTest、randomIndex、Request.Format、Response.Error、model.duration、コメントアウトされたコード。
+＊replyRandom の巨大な switch は、{条件, 返信候補} のテーブルにすると追加が容易になります。
+＊全メッセージに100%の確率で反応するので、確率かクールダウンも検討してください。
+
+【テストとツール】
+＊テストが1つもありません。最初は次の3点から始めるのが効果的です。
+　triggerExist、返信テーブル、Ollama クライアント（httptest を使用）
+＊ハンドラが具象の *discordgo.Session を受け取るため、モックできません。送信用の小さな interface を切ると解決します。
+＊gofmt が未適用の箇所があります（controller/entry.go 125行の「}else{」、ollama.go の構造体の整列）。gofmt と staticcheck を習慣にしてください。
+＊古い依存があります（golang.org/x/crypto の2021年版など）。govulncheck ./... で確認してください。
+
+【細部】
+＊グローバルのスピナー s と、discordgo の s *Session が衝突していて紛らわしいです。
+＊Normal_model は、Go の慣例では NormalModel です。
+＊ModelID 型があるのに、UseInfoPayload のフィールドは string です。
+＊エラーは %w でラップし、先頭は小文字にしてください。
+＊ログが fmt、log、Discord に分かれています。log/slog に統一してください。
+＊timer.FatalExit は、カウントダウンのために bubbletea を起動しています。time.Sleep で十分です。
+＊同関数は同じエラーを fmt と log の両方に出すため、二重表示になります。
+＊typingStart をコールバックで渡す設計は複雑です。Reply の中で開始し、defer で止めてください。
+＊匿名投稿の待機状態が、期限なしのグローバルマップです。有効期限を付け、Mutex と一緒に構造体へ包んでください。
+＊匿名投稿には、連投制限や、運営が追跡できる仕組みがありません（意図的なら問題ありません）。
+
+============================================================
+5. 良い点
+============================================================
+
+＊cmd/ と internal/ の構成は、Go の定石に沿っています。
+＊アートを embed で同梱し、配布物を dist/ に絞っています。
+＊モデル一覧が Models の1箇所にまとまっています。
+＊Webhook にタイムアウトとボディの破棄処理があります。
+＊匿名投稿の確認で、全角や大文字の y と n に対応しています。
+＊typing 表示の ticker を defer で確実に止めています。
+＊匿名投稿のマップを Mutex で守っています。
+＊.env.example があり、実際の秘密情報は同梱されていません。
+
+============================================================
+6. 直す順番の提案
+============================================================
+
+1. keep_alive: -1 を全リクエストに付ける（数分で終わり、体感差が最も大きい）
+2. Intents とハンドラを Open() の前に移す
+3. close(breaker) を sync.Once にする
+4. 返信から JSON を外す、長さ制限、AllowedMentions、空文字の除去
+5. HTTP タイムアウト、セマフォ、ストリーミング化
+6. config パッケージ作成と、ID のハードコード排除
+7. Ollama クライアントの分離と、テストの追加
+
+以上です。でんすけさんによろしくお伝えください。
