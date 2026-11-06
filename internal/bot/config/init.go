@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"strings"
 
 	"github.com/joho/godotenv"
 )
@@ -25,8 +26,8 @@ type envContainer struct {
 	WebHookURL string
 	DensuID    string
 	ExeDir     string
-
-	AdminIDs []string
+	TsKey      string
+	AdminIDs   []string
 }
 
 type artContainer struct {
@@ -34,10 +35,11 @@ type artContainer struct {
 	UpBanner    string
 }
 
-type promptContainer struct {
+type PromptContainer struct {
 	ID   string
 	Inst string
 }
+type PromptSets []PromptContainer
 
 // 環境変数にアクセスできる
 var Values *envContainer
@@ -46,7 +48,7 @@ var Values *envContainer
 var Arts *artContainer
 
 // プロンプトにアクセスする
-var Prompts *[]promptContainer
+var Prompts *PromptSets
 
 func Init() error {
 
@@ -67,6 +69,10 @@ func Init() error {
 	err = Arts.artSetup()
 	if err != nil {
 		return fmt.Errorf("artSetup: %v Values: %+v", err, Arts)
+	}
+	err = Prompts.promptSetup()
+	if err != nil{
+		return fmt.Errorf("promptSetup:%d",err)
 	}
 	return nil
 }
@@ -96,6 +102,7 @@ func (e *envContainer) envSetup() error {
 		Token:      os.Getenv("TOKEN"),
 		WebHookURL: os.Getenv("WEBHOOK_URL_1"),
 		DensuID:    os.Getenv("DENSU_ID"),
+		TsKey:      os.Getenv("TSKEY"),
 	}
 
 	if !isAllFieldsHasValue(e) {
@@ -156,16 +163,36 @@ func (e *envContainer) IdsSetup() error {
 	return scanner.Err()
 }
 
-func promptSetup() error {
-	trgDir := filepath.Join(Values.ExeDir,"prompt")
-	NameList, err := os.ReadDir(trgDir)
+func (p *PromptSets)promptSetup() error {
+	promDir := filepath.Join(Values.ExeDir, "prompt")
+	ent, err := os.ReadDir(promDir)
 	if err != nil {
 		return err
 	}
-	var contentList []string
-	for range NameList{
-		
+
+	var slice []PromptContainer
+	for _, e := range ent {
+
+		id, _ := strings.CutSuffix(e.Name(), ".txt")
+
+		path := filepath.Join(promDir, e.Name())
+		buf, _ := os.ReadFile(path)
+		txt := string(buf)
+
+		ct := PromptContainer{
+			ID:   id,
+			Inst: txt,
+		}
+		slice = append(slice, ct)
 	}
+
+	if !isAllFieldsHasValue(slice){
+		return fmt.Errorf("promptおかしい")
+	}
+
+	setSli := PromptSets(slice)
+	p = &setSli
+	return nil
 }
 
 //helper func:

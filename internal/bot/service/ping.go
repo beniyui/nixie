@@ -10,7 +10,10 @@ import (
 func Ping(s *discordgo.Session, m *discordgo.MessageCreate) {
 	//トリガーの後ろが空白
 	//ping
-	statusMsg := fmt.Sprintf("nixieUP  server: %s  version: %s", config.ENV_values.Server, config.ENV_values.Version)
-	payload := fmt.Sprintf("```%s```\n%s", config.ENV_values.UpBanner, statusMsg)
+	statusMsg := fmt.Sprintf(
+		"nixieUP  server: %s  version: %s",
+		config.Values.Server,config.Values.Version,
+	)
+	payload := fmt.Sprintf("```%s```\n%s", config.Arts.UpBanner, statusMsg)
 	s.ChannelMessageSend(m.ChannelID, payload)
 }

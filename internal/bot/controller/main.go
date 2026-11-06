@@ -45,7 +45,7 @@ func boot() {
 	fmt.Println("env ok")
 
 	//art
-	if err := config.ArtInit(); err != nil{
+	if err := config.ArtInit(); err != nil {
 		log.Println(err)
 	}
 
@@ -56,6 +56,18 @@ func boot() {
 		msg := fmt.Sprintf("discordgo: new session error:%v", err)
 		ui.FatalExit(msg)
 		return
+	}
+
+	//discordgo identify intentsの設定はがちでよくわからん コピペ。
+	dg.Identify.Intents = discordgo.IntentsGuilds | discordgo.IntentsGuildMessages | discordgo.IntentDirectMessages | discordgo.IntentMessageContent
+
+	//add handlers
+	dg.AddHandler(MessageCheck)
+	dg.AddHandler(onInteractionCreate)
+
+	//registerSlashCommands is still test. work in progress
+	if err := registerCommands(dg); err != nil {
+		log.Printf("コマンドの登録に失敗しました: %v", err)
 	}
 
 	//open
@@ -69,18 +81,6 @@ func boot() {
 	}
 	defer dg.Close()
 	spi.Stop()
-
-	//discordgo identify intentsの設定はがちでよくわからん コピペ。
-	dg.Identify.Intents = discordgo.IntentsGuilds | discordgo.IntentsGuildMessages | discordgo.IntentDirectMessages | discordgo.IntentMessageContent
-
-	//add handlers
-	dg.AddHandler(MessageCheck)
-	dg.AddHandler(onInteractionCreate)
-
-	//registerSlashCommands is still test. work in progress
-	if err := registerCommands(dg); err != nil {
-		log.Printf("コマンドの登録に失敗しました: %v", err)
-	}
 }
 
 func beet() {
@@ -102,6 +102,6 @@ func beet() {
 // display banner and wellcomeMSG
 func welcomeMSG() {
 	fmt.Printf("welcome to:\n%s\nめんどくさがりだけど優しいボット\n", config.Arts.TitleBanner)
-	fmt.Printf("version: %s | exeDir: %s\n", config.Values.Version,config.Values.ExeDir)
+	fmt.Printf("version: %s | exeDir: %s\n", config.Values.Version, config.Values.ExeDir)
 	fmt.Println("now nixie UP. 以下ログ\n___\n")
 }
