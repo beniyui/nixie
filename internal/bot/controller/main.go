@@ -28,26 +28,25 @@ func NewWorker(jobChan <-chan string) *Worker {
 var spi = spinner.New(spinner.CharSets[43], 100*time.Millisecond)
 
 func Entry() {
+	//booting. loading config.connecting to discord.and so on.
 	boot()
-	welcomeMSG()
-	beet()
 
+	// display banner and wellcomeMSG
+	fmt.Printf("welcome to:\n%s\nめんどくさがりだけど優しいボット\n", config.Arts.TitleBanner)
+	fmt.Printf("version: %s | exeDir: %s\n", config.Values.Version, config.Values.ExeDir)
+	fmt.Println("now nixie UP. 以下ログ\n___\n")
+
+	beet()
 	os.Exit(1)
 }
 
 func boot() {
 	//env init
 	if err := config.Init(); err != nil {
-		msg := fmt.Sprintf("%+v", config.Values)
-		msg = fmt.Sprintf("%s_values:%s", err, msg)
+		msg := fmt.Sprintf("%s", err)
 		ui.FatalExit(msg)
 	}
 	fmt.Println("env ok")
-
-	//art
-	if err := config.ArtInit(); err != nil {
-		log.Println(err)
-	}
 
 	//make new session;the client
 	token := config.Values.Token
@@ -97,11 +96,4 @@ func beet() {
 	case <-breaker:
 		log.Println("nixieDOWN done")
 	}
-}
-
-// display banner and wellcomeMSG
-func welcomeMSG() {
-	fmt.Printf("welcome to:\n%s\nめんどくさがりだけど優しいボット\n", config.Arts.TitleBanner)
-	fmt.Printf("version: %s | exeDir: %s\n", config.Values.Version, config.Values.ExeDir)
-	fmt.Println("now nixie UP. 以下ログ\n___\n")
 }

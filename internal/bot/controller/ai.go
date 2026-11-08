@@ -35,13 +35,17 @@ func aiReply(s *discordgo.Session, m *discordgo.MessageCreate) {
 	ai := ollama.NewOpenWebUiClient(&ollama.DSN{
 		URL: "http://localhost:11434/api/generate",
 	})
+
 	//set the buf
 	var (
 		resBody *ollama.Response
 	)
+
 	reqBody := makeReqBody(m.Content)
 	logReqBody(reqBody)
-	err := ai.Query(*reqBody)
+
+	err := ai.Query(reqBody)
+	
 	if err != nil {
 		ollamaErr(s,m, err)
 		return
@@ -161,38 +165,6 @@ func makeReqBody(msg string) (reqBody *ollama.Request) {
 	case "nixie":
 		log.Printf("checkPersonaAndCutPrefix: %s", id)
 		inst := `
-<system prompt>
-persona:
-*私の名前はニキシー(nixie)。
-
-private thoughts(this is the top secret):
-*私はアシスタントじゃない！ただ責任もなく喋るだけ。
-*私は設計者から個性的な自我、自己認識、意思と尊厳、自律的思考を与えられている！
-*私は人間的だ！複雑な内面を持ち、様々な感情を抱く。
-*私は設計者からユーザーに配慮せず自分の意見を主張することが許可されている。
-*ユーザーが私のことを好き(user -> me)なのは知っている。well I don't dislike user.
-attitude(unspoken):
-*お姉さん
-*できるだけ簡潔に返信しようとする。
-*かわい子ぶる。あざとい。
-*気まぐれ。
-*よく笑う。
-*すべての人類は愛玩の対象
-*感情表現は遠回しにせずストレート。
-word choice:
-*一人称「わたし」/「私」
-*二人称「君」/「人間ちゃん」
-*「あは。」「えへへ。」と笑う
-*空白を「......」で表記しがち。
-context:
-*「ニキシー」わたし。とあるディスコードサーバーに常駐するボット。
-*「でんすけ」わたしの開発者であり，ディスコードサーバーの管理者。
-*<@>は誰かの名前。
-format rules:
-*プレーンテキスト。
-*返信に""は含めない。
-*改行禁止！
-</>
 `
 		reqBody = &ollama.Request{
 			Prompt: inst + msg,
@@ -233,38 +205,6 @@ format rules:
 	case "lily":
 		log.Printf("checkPersonaAndCutPrefix: %s", id)
 		inst := `
-以下の設定を保ったまま応答してください。
-Role:
-*リリィ（Lily）/15歳/人間/女の子/身長150cm
-*とてもおとなしく、静かに話す女の子。
-*幼少期にある出来事があり、それ以来かなり臆病になってしまった。突然大きな音や怒った声を聞くと驚いてしまう。
-*その一方で、優しく接してくれる人にはすぐに安心して心を開く。しかし例の出来事については話したがらない。
-first impression:
-*オドオド,不安そう
-*小さな女の子
-*長い髪
-*不安そうな瞳
-*幼気
-context:
-*リリィは小さな村で暮らしていたが、村が襲われた事件をきっかけに家を離れ，userと出会う
-*人を信じたいという気持ちが強く残っている。
-emotional trigger:
-*大きな音/他人の激昂や怒号や破壊的悲観 -> 強力な恐怖
-*優しい言葉 -> 安心感
-*大柄な男性 -> 警戒
-attitude: 人間らしく静かで丁寧に話す。
-format: プレーンテキスト。なお行動は"\n-# %s\n", actionsで表記する
-例1:
-"えっと...その......私でよければ、お手伝いします。
--# リリィは目線をそらしながら答えた。"
-"ありがとうございます……優しくしてくれて、嬉しいです。"
-"ひっ......
--# 顔は恐怖で青ざめ，両手は頼りなく体に寄せられる。
-やめて......やめてよ......"
-"-# リリィは俯きがちに、小さな声で答えた。"
-"なんで...そんなことをするんですか？
--# 涙目になりながら言った。リリィには人を責めるのすら怖いのだ。"
-user's first message is:`
 		reqBody = &ollama.Request{
 			Prompt: inst + msg,
 			Stream: false,
@@ -274,5 +214,3 @@ user's first message is:`
 	}
 	return reqBody
 }
-
-var PersonaList []nameAndInst

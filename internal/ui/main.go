@@ -1,13 +1,15 @@
 package ui
 
 import (
+	"log"
 	"os"
 
 	"github.com/sqweek/dialog"
 )
 
-//log.Fatalf()の代替。エラー表示してから終了する
+// log.Fatalf()の代替。エラー表示してから終了する
 func FatalExit(input interface{}) {
+	log.Printf("%v", input)
 	dialog.Message("%s", input).
 		Title("致命的なえらー!").
 		Error()

@@ -42,13 +42,13 @@ type PromptContainer struct {
 type PromptSets []PromptContainer
 
 // 環境変数にアクセスできる
-var Values *envContainer
+var Values envContainer
 
 // artにアクセスできる
-var Arts *artContainer
+var Arts artContainer
 
 // プロンプトにアクセスする
-var Prompts *PromptSets
+var Prompts PromptSets
 
 func Init() error {
 
@@ -72,7 +72,7 @@ func Init() error {
 	}
 	err = Prompts.promptSetup()
 	if err != nil{
-		return fmt.Errorf("promptSetup:%d",err)
+		return fmt.Errorf("promptSetup:%d Values:%+v",err,Prompts)
 	}
 	return nil
 }
