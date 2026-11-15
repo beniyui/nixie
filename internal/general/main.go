@@ -6,12 +6,12 @@ import (
 	"os"
 )
 
-func main() {
+func general()error{
 
 	//boot
 	err := boot()
 	if err != nil {
-		fatalError(err)
+		return err
 	}
 
 	//welcomeMSG
@@ -19,12 +19,13 @@ func main() {
 	fmt.Printf("version: %s | exeDir: %s\n", config.EnvCont.Version, config.EnvCont.ExeDir)
 	fmt.Printf("now nixie UP. logs:\n=================\n\n")
 
+
+
 	//stay alive
 	stay()
 
-	//shutdown
+	//exit
 	fmt.Println("bye")
 	os.Exit(0)
+	return nil
 }
-
-

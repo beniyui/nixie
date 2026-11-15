@@ -13,7 +13,5 @@ func stay() {
 	defer stop()
 
 	//ここでストップする
-	select {
-	case <-ctx.Done():
-	}
+	<-ctx.Done()
 }

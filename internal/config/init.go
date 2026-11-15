@@ -85,7 +85,7 @@ func (e *envValues) envSetup() error {
 		return fmt.Errorf("godotenv.Load failed. envファイルはどこだよ: %d", err)
 	}
 
-	e = &envValues{
+	*e = envValues{
 		Server:     os.Getenv("SERVER"),
 		ArtVersion: os.Getenv("ART_VERSION"),
 		Version:    os.Getenv("VERSION"),
@@ -113,7 +113,7 @@ func (a *artValues) artSetup() error {
 		return err
 	}
 
-	a = &artValues{
+	*a = artValues{
 		TitleBanner: ti,
 		UpBanner:    up,
 	}
