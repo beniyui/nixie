@@ -11,10 +11,6 @@ import (
 	"github.com/joho/godotenv"
 )
 
-type (
-	ModelID string
-)
-
 // 初期化処理で一括で読み込む
 type envValues struct {
 	Server     string
@@ -27,7 +23,6 @@ type envValues struct {
 
 	AdminIDs []string
 }
-
 type artValues struct {
 	TitleBanner string
 	UpBanner    string
@@ -35,7 +30,7 @@ type artValues struct {
 
 type instValues struct {
 	Nixie  string
-	NixieS string
+	NixieT string
 	Lily   string
 	Gemini string
 }
@@ -51,7 +46,7 @@ var ArtsCont artValues
 // 外部からinstruction promptにアクセス
 var PromptCont instValues
 
-// setup these containeres
+// the handler for setup these containeres
 func Init() error {
 	var err error
 
@@ -65,8 +60,9 @@ func Init() error {
 		return fmt.Errorf("artsetup:%v", err)
 	}
 
-	return fmt.Errorf("error test")
+	return nil
 }
+
 
 func (e *envValues) envSetup() error {
 
@@ -75,12 +71,12 @@ func (e *envValues) envSetup() error {
 	if err != nil {
 		return fmt.Errorf("failed to get executable path. お前どういうトチ狂ったところからこいつを起動してんの!?: %v", err)
 	}
-	dir := filepath.Dir(exePath)
+	exedir := filepath.Dir(exePath)
 
 	//load the env file with godotenv
-	envPath := filepath.Join(e.ExeDir, ".env")
+	envPath := filepath.Join(exedir, ".env")
 	if err := godotenv.Load(envPath); err != nil {
-		return fmt.Errorf("godotenv.Load failed. envファイルはどこだよ: %d", err)
+		return fmt.Errorf("godotenv.Load failed. envファイルはどこだよ: %v", err)
 	}
 
 	*e = envValues{
@@ -90,7 +86,7 @@ func (e *envValues) envSetup() error {
 		Token:      os.Getenv("TOKEN"),
 		WebHookURL: os.Getenv("WEBHOOK_URL_1"),
 		DensuID:    os.Getenv("DENSU_ID"),
-		ExeDir: dir,
+		ExeDir:     exedir,
 	}
 	return nil
 }

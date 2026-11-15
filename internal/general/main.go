@@ -3,25 +3,15 @@ package general
 import (
 	"fmt"
 	"nixie/internal/config"
-	"os"
 )
-
-// the main entry point
-func Operation() {
-	err := general()
-	if err != nil {
-		fatalError(err)
-		return
-	}
-	os.Exit(0)
-}
 
 func general() error {
 
-	//boot
-	err := boot()
+	//init; loading the env file and save the containers
+	//envCont, artCont......
+	err := config.Init()
 	if err != nil {
-		return err
+		return fmt.Errorf("containers:\n\nprom:\n%+v\nart:\n%+v\nenv\n%+v\n\n===========\n\n%w", config.PromptCont, config.ArtsCont, config.EnvCont, err)
 	}
 
 	//welcomeMSG
