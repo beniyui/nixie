@@ -11,7 +11,7 @@ var files embed.FS
 
 // アート取得
 func getArt(artVer string, kind string) (string, error) {
-	path := filepath.Join(artVer, fmt.Sprintf("%s.txt", kind))
+	path := filepath.Join("assets",artVer, fmt.Sprintf("%s.txt", kind))
 	buf, err := files.ReadFile(path)
 	if err != nil {
 		return "", err

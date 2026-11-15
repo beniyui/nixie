@@ -4,5 +4,5 @@ import "nixie/internal/general"
 
 
 func main(){
-	general.Entry()
+	general.Operation()
 }

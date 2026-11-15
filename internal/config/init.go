@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"reflect"
 
 	"github.com/joho/godotenv"
 )
@@ -77,7 +76,6 @@ func (e *envValues) envSetup() error {
 		return fmt.Errorf("failed to get executable path. お前どういうトチ狂ったところからこいつを起動してんの!?: %v", err)
 	}
 	dir := filepath.Dir(exePath)
-	e.ExeDir = dir
 
 	//load the env file with godotenv
 	envPath := filepath.Join(e.ExeDir, ".env")
@@ -92,11 +90,7 @@ func (e *envValues) envSetup() error {
 		Token:      os.Getenv("TOKEN"),
 		WebHookURL: os.Getenv("WEBHOOK_URL_1"),
 		DensuID:    os.Getenv("DENSU_ID"),
-	}
-
-	//that's all?
-	if !isAllFieldsHasValue(e) {
-		return fmt.Errorf("envにはアクセスできたけど一部envの読み取りができてないな")
+		ExeDir: dir,
 	}
 	return nil
 }
@@ -118,9 +112,6 @@ func (a *artValues) artSetup() error {
 		UpBanner:    up,
 	}
 
-	if !isAllFieldsHasValue(a) {
-		return fmt.Errorf("ん？Artが取得できてなくね？")
-	}
 	return nil
 }
 
@@ -141,21 +132,4 @@ func (e *envValues) IdsSetup() error {
 	}
 	e.AdminIDs = ids
 	return scanner.Err()
-}
-
-//helper func:
-
-// すべてのフィールドが値を持つかを判定する
-func isAllFieldsHasValue(s any) bool {
-	v := reflect.ValueOf(s)
-	// for文でフィールドを1つずつチェック
-	for _, field := range v.Fields() {
-		field := field
-
-		// フィールドが初期値の場合
-		if field.IsZero() {
-			return false
-		}
-	}
-	return true
 }

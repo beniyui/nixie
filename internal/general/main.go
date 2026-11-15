@@ -6,7 +6,17 @@ import (
 	"os"
 )
 
-func general()error{
+// the main entry point
+func Operation() {
+	err := general()
+	if err != nil {
+		fatalError(err)
+		return
+	}
+	os.Exit(0)
+}
+
+func general() error {
 
 	//boot
 	err := boot()
@@ -19,13 +29,10 @@ func general()error{
 	fmt.Printf("version: %s | exeDir: %s\n", config.EnvCont.Version, config.EnvCont.ExeDir)
 	fmt.Printf("now nixie UP. logs:\n=================\n\n")
 
-
-
 	//stay alive
 	stay()
 
 	//exit
 	fmt.Println("bye")
-	os.Exit(0)
 	return nil
 }
