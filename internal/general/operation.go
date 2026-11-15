@@ -7,6 +7,7 @@ func Operation() {
 	err := general()
 	if err != nil {
 		fatalError(err)
+		os.Exit(1)
 		return
 	}
 	os.Exit(0)

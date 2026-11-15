@@ -23,6 +23,18 @@ type envValues struct {
 
 	AdminIDs []string
 }
+
+var envReqKeys = []string{
+	"SERVER",
+	"VERSION",
+	"ART_VERSION",
+	"TOKEN",
+	"WEBHOOK_URL_1",
+	"GEMINI_KEY",
+	"TSKEY",
+	"DENSU_ID",
+}
+
 type artValues struct {
 	TitleBanner string
 	UpBanner    string
@@ -63,7 +75,6 @@ func Init() error {
 	return nil
 }
 
-
 func (e *envValues) envSetup() error {
 
 	//get executable path
@@ -77,6 +88,12 @@ func (e *envValues) envSetup() error {
 	envPath := filepath.Join(exedir, ".env")
 	if err := godotenv.Load(envPath); err != nil {
 		return fmt.Errorf("godotenv.Load failed. envファイルはどこだよ: %v", err)
+	}
+
+	//that's all?
+	err = envCheck()
+	if err != nil {
+		return fmt.Errorf("env Missing: %v", err)
 	}
 
 	*e = envValues{
@@ -128,4 +145,18 @@ func (e *envValues) IdsSetup() error {
 	}
 	e.AdminIDs = ids
 	return scanner.Err()
+}
+
+func envCheck() error {
+	var missings []string
+	for _, key := range envReqKeys {
+		_, ok := os.LookupEnv(key)
+		if !ok {
+			missings = append(missings, key)
+		}
+	}
+	if missings != nil {
+		return fmt.Errorf("missing env:%v", missings)
+	}
+	return nil
 }
