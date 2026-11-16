@@ -150,8 +150,8 @@ func (e *envValues) IdsSetup() error {
 func envCheck() error {
 	var missings []string
 	for _, key := range envReqKeys {
-		_, ok := os.LookupEnv(key)
-		if !ok {
+		v, ok := os.LookupEnv(key)
+		if !ok ||v == ""{
 			missings = append(missings, key)
 		}
 	}
