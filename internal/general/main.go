@@ -28,7 +28,7 @@ func general() error {
 	dg.Identify.Intents = discordgo.IntentsGuilds | discordgo.IntentsGuildMessages | discordgo.IntentDirectMessages | discordgo.IntentMessageContent
 
 	//add handlers
-	// dg.AddHandler(bot.RootHandler)
+	dg.AddHandler(bot.RootHandler)
 
 	if err := dg.Open(); err != nil {
 		return fmt.Errorf("discordgo conection error\nたぶんネットが無いだけ:%v", err)

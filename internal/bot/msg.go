@@ -1,17 +1,21 @@
 package bot
 
-// import (
-// 	"nixie/internal/config"
+import (
+	"fmt"
+	"nixie/internal/config"
 
-// 	"github.com/bwmarrin/discordgo"
-// )
+	"github.com/bwmarrin/discordgo"
+)
 
-// // func MSG(s *discordgo.Session, m *discordgo.MessageCreate) {
+func MSG(s *discordgo.Session, m *discordgo.MessageCreate) {
 
-// // 	//init
-// // 	content := m.Content
-// // 	channel := m.ChannelID
-// // 	author := m.Author
-// // 	Densu := config.EnvCont.DensuID
+	//init
+	content := m.Content
+	channel := m.ChannelID
+	author := fmt.Sprintf("%v", m.Author)
+	densu := config.EnvCont.DensuID
 
-// // }
+	if author == densu {
+		s.ChannelMessageSend(channel, content)
+	}
+}
