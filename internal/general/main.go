@@ -10,6 +10,8 @@ import (
 
 func general() error {
 
+	fmt.Println("launch......")
+
 	//init; loading the env file and save the containers
 	//envCont, artCont......
 	err := config.Init()
@@ -31,7 +33,7 @@ func general() error {
 	dg.AddHandler(bot.RootHandler)
 
 	if err := dg.Open(); err != nil {
-		return fmt.Errorf("discordgo conection error\nたぶんネットが無いだけ:%v", err)
+		return fmt.Errorf("discordgo conection error\n:%v", err)
 	}
 	defer dg.Close()
 
