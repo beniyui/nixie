@@ -2,15 +2,25 @@ package general
 
 import (
 	"fmt"
-	"nixie/internal/config"
 	"nixie/internal/bot"
+	"nixie/internal/config"
 
 	"github.com/bwmarrin/discordgo"
 )
 
 func general() error {
 
-	fmt.Println("launch......")
+	//spiner init
+	hujiko := []string{"く", "ぁ", "ｗ", "せ", "ｄ", "ｒ", "ｆ", "ｔ", "ｇ", "ｙ", "ふ", "じ", "こ", "ｌ", "ｐ"}
+	done := make(chan struct{})
+	spi := spiSession{
+		msg:         "起動中...",
+		frames:      hujiko,
+		doneChannel: done,
+	}
+
+	//spiner start
+	spi.start()
 
 	//init; loading the env file and save the containers
 	//envCont, artCont......
@@ -37,11 +47,14 @@ func general() error {
 	}
 	defer dg.Close()
 
+	//spiner end
+	spi.stop()
+	fmt.Println("\r成功！")
+
 	//welcomeMSG
-	fmt.Println("成功！")
 	fmt.Printf("welcome to:\n%s\nめんどくさがりだけど優しいボット\n", config.ArtsCont.TitleBanner)
 	fmt.Printf("version: %s | exeDir: %s\n", config.EnvCont.Version, config.EnvCont.ExeDir)
-	fmt.Printf("now nixie UP. logs:\n=================\n\n")
+	fmt.Printf("now nixie UP. logs:\n======================================\n\n")
 
 	//stay alive
 	stay()

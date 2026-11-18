@@ -2,7 +2,7 @@ package general
 
 import "os"
 
-// the main entry point
+// the operator
 func Operation() {
 	err := general()
 	if err != nil {
