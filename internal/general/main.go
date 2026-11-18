@@ -12,16 +12,11 @@ func general() error {
 
 	//spiner init
 	hujiko := []string{"く", "ぁ", "ｗ", "せ", "ｄ", "ｒ", "ｆ", "ｔ", "ｇ", "ｙ", "ふ", "じ", "こ", "ｌ", "ｐ"}
-	done := make(chan struct{})
-	spi := spiSession{
-		msg:         "起動中...",
-		frames:      hujiko,
-		doneChannel: done,
-	}
-
-	//spiner start
+	spi := newSpiSession("起動中...", hujiko)
 	spi.start()
+	defer spi.stop()
 
+	fmt.Println("spiner setup OK")
 	//init; loading the env file and save the containers
 	//envCont, artCont......
 	err := config.Init()
@@ -47,9 +42,9 @@ func general() error {
 	}
 	defer dg.Close()
 
-	//spiner end
+	//succes!
 	spi.stop()
-	fmt.Println("\r成功！")
+	fmt.Println("成功！")
 
 	//welcomeMSG
 	fmt.Printf("welcome to:\n%s\nめんどくさがりだけど優しいボット\n", config.ArtsCont.TitleBanner)

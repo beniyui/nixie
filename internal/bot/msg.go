@@ -6,7 +6,7 @@ import (
 	"github.com/bwmarrin/discordgo"
 )
 
-func MSG(s *discordgo.Session, m *discordgo.MessageCreate) {
+func MSG(s *discordgo.Session, m *discordgo.MessageCreate) error{
 
 	//init
 	content := m.Content
@@ -17,4 +17,5 @@ func MSG(s *discordgo.Session, m *discordgo.MessageCreate) {
 	if author == densu {
 		s.ChannelMessageSend(channel, content)
 	}
+	return nil
 }
