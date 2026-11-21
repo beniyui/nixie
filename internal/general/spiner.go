@@ -23,7 +23,7 @@ func (s spiSession) stop() {
 func spin(s spiSession) {
 
 	//init
-	ticker := time.NewTicker(50 * time.Millisecond)
+	ticker := time.NewTicker(70 * time.Millisecond)
 	defer ticker.Stop()
 
 	done := s.doneChannel
@@ -36,7 +36,7 @@ func spin(s spiSession) {
 		case <-done:
 			return
 		case <-ticker.C:
-			fmt.Printf("\r%s %s", msg, frames[i%len(frames)])
+			fmt.Printf("\r%s %s:", msg, frames[i%len(frames)])
 			i++
 		}
 

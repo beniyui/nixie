@@ -2,7 +2,8 @@ package general
 
 import (
 	"fmt"
-	"nixie/internal/bot"
+	"log"
+	"nixie/internal/bot/handler"
 	"nixie/internal/config"
 
 	"github.com/bwmarrin/discordgo"
@@ -14,13 +15,14 @@ func general() error {
 	hujiko := []string{"く", "ぁ", "ｗ", "せ", "ｄ", "ｒ", "ｆ", "ｔ", "ｇ", "ｙ", "ふ", "じ", "こ", "ｌ", "ｐ"}
 	done := make(chan struct{})
 	spi := spiSession{
-		msg:         "起動中...",
+		msg:         "動作中",
 		frames:      hujiko,
 		doneChannel: done,
 	}
 
 	//spiner start
 	spi.start()
+	defer spi.stop()
 
 	//init; loading the env file and save the containers
 	//envCont, artCont......
@@ -40,22 +42,21 @@ func general() error {
 	dg.Identify.Intents = discordgo.IntentsGuilds | discordgo.IntentsGuildMessages | discordgo.IntentDirectMessages | discordgo.IntentMessageContent
 
 	//add handlers
-	dg.AddHandler(bot.RootHandler)
+	dg.AddHandler(handler.Operation)
 
 	if err := dg.Open(); err != nil {
 		return fmt.Errorf("discordgo conection error\n:%v", err)
 	}
 	defer dg.Close()
 
-	//spiner end
-	spi.stop()
-	fmt.Println("\r成功！")
+	fmt.Println("\n成功！")
 
 	//welcomeMSG
 	fmt.Printf("welcome to:\n%s\nめんどくさがりだけど優しいボット\n", config.ArtsCont.TitleBanner)
 	fmt.Printf("version: %s | exeDir: %s\n", config.EnvCont.Version, config.EnvCont.ExeDir)
 	fmt.Printf("now nixie UP. logs:\n======================================\n\n")
 
+	log.Println("[info] good morning!")
 	//stay alive
 	stay()
 
