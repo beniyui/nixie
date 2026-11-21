@@ -24,6 +24,7 @@ func general() error {
 	spi.start()
 	defer spi.stop()
 
+	//check primary
 	//init; loading the env file and save the containers
 	//envCont, artCont......
 	err := config.Init()

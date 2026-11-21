@@ -1,6 +1,6 @@
 package config
 
-//this is config files reader
+
 
 import (
 	"bufio"

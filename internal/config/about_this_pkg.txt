@@ -1,0 +1,6 @@
+this is config files reader.
+primary.go, read required values for booting.
+so i made it errors in primary means fatal.
+in secondary.go is not so. it just displays them.
+
+the direcctry "assets" is embed files.

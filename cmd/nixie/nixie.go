@@ -2,7 +2,6 @@ package main
 
 import "nixie/internal/general"
 
-
-func main(){
+func main() {
 	general.Operation()
 }

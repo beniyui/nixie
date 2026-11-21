@@ -1,7 +1,8 @@
 package handler
 
 import (
-	"nixie/internal/config"
+	"fmt"
+	"slices"
 	"strings"
 
 	"github.com/bwmarrin/discordgo"
@@ -10,37 +11,54 @@ import (
 type cmdID int
 
 const (
-	n cmdID = iota //n, none, do nothing
-	b
+	wrong cmdID = iota
+	n           //n, none, do nothing
+	test
 )
 
 func handler(s *discordgo.Session, m *discordgo.MessageCreate) error {
-	id, err := msgListener(s, m)
-	if err != nil {
-		return err
-	}
+	id := msgListener(s, m)
 	switch id {
-
-	case n:
-		return nil
-
+	case wrong:
+		return fmt.Errorf("id is something wrong")
+	case test:
+		s.ChannelMessageSend(m.ChannelID, "nixie triggered.")
 	}
+
 	return nil
 }
 
 // return id
-func msgListener(s *discordgo.Session, m *discordgo.MessageCreate) (id cmdID, err error) {
-
-	//init
-	content := m.Content
-	channel := m.ChannelID
-	authorID := m.Author.ID
-
-	if authorID == config.EnvCont.DensuID {
-		if strings.HasPrefix(content, "nixie") {
-			s.ChannelMessageSend(channel, "triggered.")
-
-		}
+func msgListener(s *discordgo.Session, m *discordgo.MessageCreate) (id cmdID) {
+	if m.Author.Bot {
+		return n
 	}
-	return n, nil
+	switch hasTrigger(m.Content) {
+	case true:
+	case false:
+		return n
+	default:
+		return wrong
+
+	}
+
+	return
+}
+
+var triggerWords = []string{"nixie", "ニキシ", "にきし", "ねえさん"}
+
+func hasTrigger(s string) bool {
+	trg := strings.ToLower(s)
+
+	f := func(w string) bool {
+		return strings.Contains(trg, w)
+	}
+	return slices.ContainsFunc(triggerWords, f)
+
+	// for _, str := range triggerWords {
+	// 	if strings.Contains(trg, str) {
+	// 		return true
+	// 	}
+	// }
+	// return false
 }
