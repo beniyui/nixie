@@ -31,31 +31,29 @@ func handler(s *discordgo.Session, m *discordgo.MessageCreate) error {
 }
 
 // return id
-func msgListener(m *discordgo.MessageCreate) (id cmdID) {
+func msgListener(m *discordgo.MessageCreate) (id cmdID, fmtMsg string) {
 	if m.Author.Bot {
-		return N
+		return N,""
 	}
 	if m.Author.ID != config.EnvCont.DensuID {
-		return N
+		return N,""
 	}
 
 	switch hasTrigger(m.Content) {
 	case true:
-		return AI
+		return AI,
 	case false:
-		return N
+		return N,""
 	default:
-		return WRONG
+		return WRONG,""
 
 	}
-
-	return
 }
 
 var triggerWords = []string{"nixie", "ニキシ", "にきし", "ねえさん"}
 var triggerPrefixes = []string{"n!"}
 
-func hasTrigger(s string) bool {
+func hasTrigger(s string) (bool, trig string) {
 	trg := strings.ToLower(s)
 
 	for _, str := range triggerWords {

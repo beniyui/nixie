@@ -13,5 +13,5 @@ func Operation(s *discordgo.Session, m *discordgo.MessageCreate) {
 		log.Printf("[error] %v", err)
 	}
 
-	//life is not forever
+	//life is not forever.
 }
