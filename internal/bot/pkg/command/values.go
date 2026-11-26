@@ -25,7 +25,7 @@ const (
 
 //cmd context
 type cmdCont struct{
-	Main cmdbody
+	SubCmd cmdbody
 	Options []cmdbody
 }
 
