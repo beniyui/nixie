@@ -6,12 +6,12 @@ import "strings"
 func hasTrigger(inputString string) (hasTrigger bool, trig triggerCont) {
 	s := strings.ToLower(inputString)
 	if b, trig := hasTriggerWord(s); b == true {
-		return true, triggerCont{Type: WORD, String: trig}
+		return true, triggerCont{Type: WORD, Key: trig}
 	}
 	if b, trig := hasTriggerPrefix(s); b == true {
-		return true, triggerCont{Type: PREFIX, String: trig}
+		return true, triggerCont{Type: PREFIX, Key: trig}
 	}
-	return false, triggerCont{Type: 0, String: ""}
+	return false, triggerCont{Type: 0, Key: ""}
 }
 
 func hasTriggerWord(trg string) (exist bool, trigger string) {

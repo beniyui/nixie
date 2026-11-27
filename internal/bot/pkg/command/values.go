@@ -3,44 +3,40 @@ package command
 var triggerWords = []string{"nixie", "ニキシ", "にきし", "ねえさん"}
 var triggerPrefixes = []string{"n!"}
 
-
-//command.Context
+// command.Context
 type Context struct {
 	CmdIsDetected bool
+	Cmd cmdBody
+	Options     []cmdBody
 	TriggerInfo triggerCont
-	CmdInfo cmdCont
 }
 
-//trigger context
+// trigger context
 type triggerCont struct {
-	Type   TriggerType
-	String string
+	Type TriggerType
+	Key  string
 }
 type TriggerType int
+
 const (
 	//0
 	WORD TriggerType = iota + 1
 	PREFIX
 )
 
-//cmd context
-type cmdCont struct{
-	SubCmd cmdbody
-	Options []cmdbody
-}
+// option
 
-
-// cmdbody
-type cmdbody struct{
-	ID id
-	Arg []string
+// cmdBody
+type cmdBody struct {
+	ID  id
+	Arg string
 }
 
 type id int
-const(
+
+const (
 	// = 0
 	TEST id = iota + 1
 	PING
 	AI
-
 )

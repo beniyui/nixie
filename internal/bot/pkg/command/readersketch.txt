@@ -1,0 +1,98 @@
+`cmd_reader.go` でのパース処理において、特に `shlex.Split` した後の引数ハンドリングや `flag` パッケージの使い方で詰まっているようですね。
+
+現在の実装方針として、**「コマンド名を先頭トークンで判別し、残りの引数を各コマンド専用のパーサーに渡す」**という設計にするのがシンプルで拡張性が高いです。
+
+以下に実装のスケッチ案を提案します。
+
+### 設計方針のスケッチ
+
+1. **`cmdReader` の役割**: 入力をトークン化し、コマンド名を特定して適切なパーサーへ振り分ける。
+2. **`parser` の役割**: 特定のコマンドに対する引数やフラグを解析する。
+
+```go
+package command
+
+import (
+	"flag"
+	"strings"
+
+	"github.com/google/shlex"
+)
+
+// コマンドIDの定数定義を想定
+const (
+	AI   = "ai"
+	PING = "ping"
+)
+
+func cmdReader(rawStr string, trig triggerCont) (cmdCont, error) {
+	var bufcmdCont cmdCont
+
+	switch trig.Type {
+	case WORD:
+		bufcmdCont.Main.ID = AI
+		bufcmdCont.Main.Arg = []string{rawStr}
+		return bufcmdCont, nil
+
+	case PREFIX:
+		trimedStr := strings.TrimPrefix(rawStr, trig.String)
+		argsSlice, err := shlex.Split(trimedStr)
+		if err != nil {
+			return cmdCont{}, err
+		}
+
+		if len(argsSlice) == 0 {
+			// 空の場合はデフォルト動作（例: AIへ）
+			bufcmdCont.Main.ID = AI
+			bufcmdCont.Main.Arg = []string{trimedStr}
+			return bufcmdCont, nil
+		}
+
+		// 先頭トークンでコマンドを判別
+		subCmd := strings.ToLower(argsSlice[0])
+
+		switch subCmd {
+		case "ping":
+			bufcmdCont.Main.ID = PING
+			return bufcmdCont, nil
+		
+		case "ai":
+			// aiコマンドの引数解析
+			return parseAICommand(argsSlice[1:])
+		
+		default:
+			// 未知のコマンドはとりあえずAIへ
+			bufcmdCont.Main.ID = AI
+			bufcmdCont.Main.Arg = []string{trimedStr}
+			return bufcmdCont, nil
+		}
+	}
+	return bufcmdCont, nil
+}
+
+// コマンドごとに専用のパーサーを用意すると管理しやすいです
+func parseAICommand(args []string) (cmdCont, error) {
+	fs := flag.NewFlagSet("ai", flag.ContinueOnError)
+	// 例: --model フラグなどを定義
+	modelPtr := fs.String("model", "gpt-4", "model name")
+	
+	if err := fs.Parse(args); err != nil {
+		return cmdCont{}, err
+	}
+
+	return cmdCont{
+		Main: content{
+			ID:  AI,
+			Arg: fs.Args(), // 残りの引数
+			// オプション等を構造体に詰め込む
+		},
+	}, nil
+}
+```
+
+### ポイント
+* **`argsSlice[0]` で分岐**: `ping` なのか `ai` なのかを最初に決めることで、後の `flag.FlagSet` の処理が書きやすくなります。
+* **コマンドごとの関数化**: `parser` を汎用的なものにするよりも、`parseAICommand`、`parsePingCommand` のように分割すると、フラグ構成（`flag.FlagSet`）がコマンドごとに整理されます。
+* **`flag.ContinueOnError`**: これを指定しておくと、パースエラー時にプログラムが終了せず、エラーを返り値として受け取れるため、Discord bot 等の処理には適しています。
+
+このようにコマンドごとにパーサーを切り出す形にすると、`cmdReader` が肥大化するのを防げます。この方向性で進められそうでしょうか？もし特定のフラグパースで困っている点があれば教えてください。

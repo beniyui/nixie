@@ -6,11 +6,11 @@ func Manager(input string) (Context, error) {
 	has, trig := hasTrigger(input)
 	if !has {
 		Contextbuf.CmdIsDetected = false
-		return Contextbuf,nil
+		return Contextbuf, nil
 	}
 	Contextbuf.CmdIsDetected = true
 
 	buf := cmdReader(trig)
-	Contextbuf.CmdInfo = cmdCont{ID: 0, Arg: []BadExpr, Options: []id{}}
+	Contextbuf.Options = optionCont{ID: 0, Arg: []BadExpr, Options: []id{}}
 
 }
