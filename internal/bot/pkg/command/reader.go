@@ -62,6 +62,7 @@ func optionsBuilder(optionStr []string, prefixTrimedInput string) ([]optionBody,
 				bufBody.ID = THINK
 			default:
 				bufBody.ID = NOTFOUND
+				
 			}
 			bufSlice = append(bufSlice, bufBody)
 		case 2:

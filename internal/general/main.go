@@ -3,7 +3,7 @@ package general
 import (
 	"fmt"
 	"log"
-	"nixie/internal/bot/handler"
+	"nixie/internal/bot/handler/general"
 	"nixie/internal/config"
 
 	"github.com/bwmarrin/discordgo"
