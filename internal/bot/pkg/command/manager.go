@@ -10,7 +10,7 @@ func Manager(input string) (Context, error) {
 	}
 	Contextbuf.CmdIsDetected = true
 
-	buf := cmdReader(trig)
-	Contextbuf.Options = optionCont{ID: 0, Arg: []BadExpr, Options: []id{}}
+	buf := reader(trig)
+	Contextbuf.Options = optionCont{ID: 0, Arg: []BadExpr, Options: []optionID{}}
 
 }

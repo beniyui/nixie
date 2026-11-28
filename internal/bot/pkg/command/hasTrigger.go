@@ -3,15 +3,15 @@ package command
 import "strings"
 
 //call this func from parser
-func hasTrigger(inputString string) (hasTrigger bool, trig triggerCont) {
+func hasTrigger(inputString string) (hasTrigger bool, trig triggerBody) {
 	s := strings.ToLower(inputString)
 	if b, trig := hasTriggerWord(s); b == true {
-		return true, triggerCont{Type: WORD, Key: trig}
+		return true, triggerBody{Type: WORD, Key: trig}
 	}
 	if b, trig := hasTriggerPrefix(s); b == true {
-		return true, triggerCont{Type: PREFIX, Key: trig}
+		return true, triggerBody{Type: PREFIX, Key: trig}
 	}
-	return false, triggerCont{Type: 0, Key: ""}
+	return false, triggerBody{Type: 0, Key: ""}
 }
 
 func hasTriggerWord(trg string) (exist bool, trigger string) {

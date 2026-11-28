@@ -5,38 +5,36 @@ var triggerPrefixes = []string{"n!"}
 
 // command.Context
 type Context struct {
-	CmdIsDetected bool
-	Cmd cmdBody
-	Options     []cmdBody
-	TriggerInfo triggerCont
+    CmdIsDetected bool
+	Options     []*optionBody
+	TriggerInfo triggerBody
 }
 
-// trigger context
-type triggerCont struct {
+// option
+type optionBody struct {
+	ID  optionID
+	Arg string
+}
+
+type optionID int
+
+const(
+    AI optionID = iota
+	PING 
+	THINK
+	NOTFOUND
+)
+
+// trigger
+type triggerBody struct {
 	Type TriggerType
 	Key  string
 }
+
 type TriggerType int
 
 const (
 	//0
 	WORD TriggerType = iota + 1
 	PREFIX
-)
-
-// option
-
-// cmdBody
-type cmdBody struct {
-	ID  id
-	Arg string
-}
-
-type id int
-
-const (
-	// = 0
-	TEST id = iota + 1
-	PING
-	AI
 )
