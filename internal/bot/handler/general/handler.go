@@ -1,23 +1,13 @@
 package handler
 
 import (
-	"fmt"
+	"nixie/internal/bot/pkg/command"
 
 	"github.com/bwmarrin/discordgo"
 )
 
-
-
 func handler(s *discordgo.Session, m *discordgo.MessageCreate) error {
-	id := msgListener(m)
-	switch id {
-	case WRONG:
-		return fmt.Errorf("id is something wrong")
-	case NONE:
-		return nil
-	case AI:
-
-	}
+	cmdCont, err := command.Listener(m.Content)
 
 	return nil
 }

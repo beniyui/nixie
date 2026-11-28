@@ -1,16 +1,24 @@
 package command
 
-func Manager(input string) (Context, error) {
+func Listener(rawStr string) (Context, error) {
 	var Contextbuf Context
 
-	has, trig := hasTrigger(input)
+	has, trig := hasTrigger(rawStr)
 	if !has {
 		Contextbuf.CmdIsDetected = false
 		return Contextbuf, nil
 	}
-	Contextbuf.CmdIsDetected = true
 
-	buf := reader(trig)
-	Contextbuf.Options = optionCont{ID: 0, Arg: []BadExpr, Options: []optionID{}}
+	buf, err := reader(rawStr, trig)
+	if err != nil {
+		return Context{}, err
+	}
 
+	Contextbuf = Context{
+		CmdIsDetected: true,
+		Options:       buf,
+		TriggerInfo:   trig,
+	}
+
+	return Contextbuf, nil
 }

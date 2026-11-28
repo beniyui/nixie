@@ -6,7 +6,7 @@ var triggerPrefixes = []string{"n!"}
 // command.Context
 type Context struct {
     CmdIsDetected bool
-	Options     []*optionBody
+	Options     []optionBody
 	TriggerInfo triggerBody
 }
 

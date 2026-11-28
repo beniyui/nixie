@@ -3,8 +3,8 @@ package command
 import "strings"
 
 //call this func from parser
-func hasTrigger(inputString string) (hasTrigger bool, trig triggerBody) {
-	s := strings.ToLower(inputString)
+func hasTrigger(rawString string) (hasTrigger bool, trig triggerBody) {
+	s := strings.ToLower(rawString)
 	if b, trig := hasTriggerWord(s); b == true {
 		return true, triggerBody{Type: WORD, Key: trig}
 	}
